@@ -11,11 +11,19 @@ export interface GeneratedSlide extends SlideContent {
   isImageLoading?: boolean;
 }
 
+export interface BrandIdentity {
+  logoUrl: string | null;
+  primaryColor: string;
+  secondaryColor: string;
+  font: 'sans' | 'serif' | 'mono';
+}
+
 export interface PitchDeck {
   title: string;
   companyName: string;
   tagline: string;
   slides: GeneratedSlide[];
+  brand: BrandIdentity;
 }
 
 export enum GenerationStep {
@@ -30,7 +38,7 @@ export enum GenerationStep {
 }
 
 export type PitchTemplateId = 'sequoia' | 'yc' | 'kawasaki' | '500startups' | 'unusual' | 'soma' | 'intercom' | 'khosla' | 'canonical';
-export type VisualStyleId = 'photorealistic' | 'minimalist' | 'cyberpunk' | 'abstract';
+export type VisualStyleId = 'corporate' | 'tech_minimal' | 'swiss' | 'editorial' | 'custom';
 
 export interface PitchTemplate {
   id: PitchTemplateId;

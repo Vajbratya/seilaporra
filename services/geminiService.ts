@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { PitchDeck, PitchTemplateId, VisualStyleId, Language, LANGUAGES } from "../types";
+import { PitchDeck, PitchTemplateId, VisualStyleId, Language, LANGUAGES, BrandIdentity } from "../types";
 
 const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -154,25 +154,30 @@ export const PITCH_TEMPLATES: Record<PitchTemplateId, { name: string, descriptio
 };
 
 export const VISUAL_STYLES: Record<VisualStyleId, { name: string, description: string, promptModifier: string }> = {
-  photorealistic: {
-    name: "Cinematic Realism",
-    description: "High-impact, photorealistic photography.",
-    promptModifier: "cinematic, photorealistic, 8k, dramatic lighting, highly detailed, professional photography style, shot on 35mm lens, depth of field, award winning photography"
+  corporate: {
+    name: "Executive / Fortune 500",
+    description: "Trustworthy, established, clean. Think consulting firms or major banks.",
+    promptModifier: "high-end corporate photography, clean office environments, glass and steel architecture, professional lighting, photorealistic, trust, executive style, 8k"
   },
-  minimalist: {
-    name: "Modern Minimalist",
-    description: "Clean vector art and flat design.",
-    promptModifier: "minimalist, clean lines, flat vector art, corporate memphis style, plenty of whitespace, professional, trending on dribbble, vector illustration, high contrast, solid colors"
+  tech_minimal: {
+    name: "Silicon Valley Minimalist",
+    description: "Stripe/Apple aesthetic. Lots of whitespace, clean typography.",
+    promptModifier: "silicon valley tech aesthetic, stripe style, clean white backgrounds, soft shadows, modern minimalism, high tech, premium product photography"
   },
-  cyberpunk: {
-    name: "Cyberpunk / Neon",
-    description: "High-energy, futuristic, glowing visuals.",
-    promptModifier: "cyberpunk, neon lights, futuristic, high tech, glowing interfaces, dark background, 3D render, volumetric lighting, blade runner style, synthesizerwave aesthetic"
+  swiss: {
+    name: "Swiss International",
+    description: "Bold grid systems, strong typography, modernist.",
+    promptModifier: "swiss international style, bauhaus influence, bold typography, grid systems, geometric shapes, clean lines, modernist architecture, muted but strong colors"
   },
-  abstract: {
-    name: "Abstract 3D Tech",
-    description: "Modern glassmorphism and isometric 3D.",
-    promptModifier: "abstract 3D isometric, glassmorphism, claymorphism, soft lighting, pastel colors, modern tech startup style, unreal engine 5 render, octane render, matte finish"
+  editorial: {
+    name: "High-End Editorial",
+    description: "Magazine quality. Focus on dramatic imagery and serif fonts.",
+    promptModifier: "editorial fashion photography style, vogue aesthetic, dramatic lighting, high contrast, cinematic depth of field, award winning photography, emotive"
+  },
+  custom: {
+    name: "Custom Style",
+    description: "Define your own unique visual style.",
+    promptModifier: "" // This is overridden by user input
   }
 };
 
@@ -224,7 +229,9 @@ export const generateDeckStructure = async (
   userIdea: string, 
   templateId: PitchTemplateId,
   styleId: VisualStyleId,
-  language: Language
+  language: Language,
+  brand: BrandIdentity,
+  customStylePrompt?: string,
 ): Promise<PitchDeck> => {
   const ai = getAI();
   const model = "gemini-3-pro-preview"; 
@@ -232,6 +239,9 @@ export const generateDeckStructure = async (
   const templateStructure = TEMPLATE_STRUCTURES[templateId];
   const style = VISUAL_STYLES[styleId];
   const langName = LANGUAGES[language];
+  
+  // Use custom prompt if selected, otherwise use the preset
+  const visualPrompt = styleId === 'custom' && customStylePrompt ? customStylePrompt : style.promptModifier;
 
   // HUGELY IMPROVED PROMPT
   const SYSTEM_INSTRUCTION = `
@@ -239,6 +249,10 @@ export const generateDeckStructure = async (
     
     OUTPUT LANGUAGE:
     All slide titles, bullet points, and speaker notes MUST be in ${langName}.
+    
+    BRAND COLORS:
+    The user has a design system with Primary Color: ${brand.primaryColor} and Secondary Color: ${brand.secondaryColor}.
+    If appropriate, incorporate color descriptions into the 'imagePrompt' that compliment these colors (e.g., if Primary is Blue, ask for 'cool tones' or 'blue accents').
     
     YOUR CORE PHILOSOPHY:
     1.  **VISCERAL PUNCH**: The Problem slide must evoke emotion. Don't just state facts; describe the pain.
@@ -257,7 +271,7 @@ export const generateDeckStructure = async (
     ${JSON.stringify(templateStructure)}
 
     VISUAL STYLE:
-    All image prompts must adhere to: ${style.promptModifier}.
+    All image prompts must adhere to: ${visualPrompt}.
     Do NOT ask for text in the images.
     
     TASK:
@@ -286,6 +300,8 @@ export const generateDeckStructure = async (
 
   try {
     const data = JSON.parse(text) as PitchDeck;
+    // Inject the brand identity into the deck object so the renderer can use it
+    data.brand = brand;
     return mapDeckIds(data);
   } catch (e) {
     console.error("Failed to parse JSON", e);
@@ -337,12 +353,15 @@ export const refinePitchDeck = async (
   originalDeck: PitchDeck, 
   critique: string,
   styleId: VisualStyleId,
-  language: Language
+  language: Language,
+  customStylePrompt?: string
 ): Promise<PitchDeck> => {
   const ai = getAI();
   const model = "gemini-3-pro-preview";
   const style = VISUAL_STYLES[styleId];
   const langName = LANGUAGES[language];
+  
+  const visualPrompt = styleId === 'custom' && customStylePrompt ? customStylePrompt : style.promptModifier;
 
   const SYSTEM_INSTRUCTION = `
     You are a world-class Pitch Deck editor.
@@ -355,7 +374,7 @@ export const refinePitchDeck = async (
     1.  **Upgrade Titles**: Make every slide title a declarative, powerful statement.
     2.  **Sharpen Value**: Ensure it sounds like a pain-killer (aspirin).
     3.  **Address Risks**: If the VC called out a risk, address it in the bullet points.
-    4.  **Visuals**: Keep the visual prompts aligned with style: ${style.promptModifier}.
+    4.  **Visuals**: Keep the visual prompts aligned with style: ${visualPrompt}.
     
     Return the full, updated JSON.
   `;
@@ -383,6 +402,8 @@ export const refinePitchDeck = async (
 
   try {
     const data = JSON.parse(text) as PitchDeck;
+    // Preserve brand identity
+    data.brand = originalDeck.brand;
     return mapDeckIds(data);
   } catch (e) {
     console.error("Failed to parse Refined JSON", e);
@@ -399,12 +420,13 @@ const mapDeckIds = (data: PitchDeck): PitchDeck => {
   return { ...data, slides: slidesWithIds };
 };
 
-export const generateSlideImage = async (prompt: string, styleId: VisualStyleId): Promise<string> => {
+export const generateSlideImage = async (prompt: string, styleId: VisualStyleId, customStylePrompt?: string): Promise<string> => {
   const ai = getAI();
   const model = "gemini-3-pro-image-preview";
   const style = VISUAL_STYLES[styleId];
   
-  const enhancedPrompt = `${prompt} . Style details: ${style.promptModifier}. No text, no words, high quality render.`;
+  const visualPrompt = styleId === 'custom' && customStylePrompt ? customStylePrompt : style.promptModifier;
+  const enhancedPrompt = `${prompt} . Style details: ${visualPrompt}. No text, no words, high quality render.`;
 
   try {
     const response = await ai.models.generateContent({
