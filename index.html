@@ -48,9 +48,25 @@
         scrollbar-width: none;
       }
       @media print {
-        body { background-color: white; color: black; }
+        @page {
+          size: landscape;
+          margin: 0;
+        }
+        body {
+          background-color: white;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        #root {
+          width: 100%;
+        }
         .no-print { display: none !important; }
-        .page-break { page-break-after: always; }
+        .page-break { 
+          page-break-after: always;
+          break-after: page;
+          height: 100vh;
+          width: 100vw;
+        }
       }
     </style>
   <script type="importmap">

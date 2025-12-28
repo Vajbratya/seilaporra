@@ -379,39 +379,6 @@ const App = () => {
           </div>
         )}
 
-        {/* LOADING STATES */}
-        {(step === GenerationStep.CHECKING_KEY || 
-          step === GenerationStep.GENERATING_TEXT ||
-          step === GenerationStep.REVIEWING || 
-          step === GenerationStep.REFINING
-        ) && (
-          <div className="flex-1 flex flex-col justify-center items-center text-center animate-[fadeIn_0.5s_ease-out]">
-            <div className="relative w-32 h-32 mb-8">
-              <div className={`absolute inset-0 border-4 rounded-full opacity-20 ${step === GenerationStep.REVIEWING ? 'border-red-500' : 'border-sky-500'}`} style={{ borderColor: step !== GenerationStep.REVIEWING ? primaryColor : undefined }}></div>
-              <div className={`absolute inset-0 border-4 rounded-full border-t-transparent animate-spin ${step === GenerationStep.REVIEWING ? 'border-red-500' : 'border-sky-500'}`} style={{ borderTopColor: 'transparent', borderColor: step !== GenerationStep.REVIEWING ? primaryColor : undefined, borderRightColor: step !== GenerationStep.REVIEWING ? primaryColor : undefined, borderBottomColor: step !== GenerationStep.REVIEWING ? primaryColor : undefined }}></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                 <RocketIcon className={`w-12 h-12 animate-pulse ${step === GenerationStep.REVIEWING ? 'text-red-500' : 'text-sky-500'}`} style={{ color: step !== GenerationStep.REVIEWING ? primaryColor : undefined }} />
-              </div>
-            </div>
-            
-            <h2 className="text-3xl font-bold text-white mb-4">
-              {step === GenerationStep.CHECKING_KEY && "Authenticating..."}
-              {step === GenerationStep.GENERATING_TEXT && "Drafting Your Masterpiece..."}
-              {step === GenerationStep.REVIEWING && <span className="text-red-400 tracking-wider">EVIL VC IS JUDGING YOU...</span>}
-              {step === GenerationStep.REFINING && <span className="text-sky-400 tracking-wider">REFINING & POLISHING...</span>}
-            </h2>
-            
-            <div className="max-w-md mx-auto space-y-2">
-              <p className="text-slate-400">
-                {step === GenerationStep.CHECKING_KEY && "Establishing secure connection."}
-                {step === GenerationStep.GENERATING_TEXT && `Applying the ${PITCH_TEMPLATES[selectedTemplate].name} framework in ${LANGUAGES[selectedLanguage]}.`}
-                {step === GenerationStep.REVIEWING && "Analyzing market size logic, problem statements, and fluff."}
-                {step === GenerationStep.REFINING && "Implementing feedback to ensure maximum impact."}
-              </p>
-            </div>
-          </div>
-        )}
-
         {(step === GenerationStep.GENERATING_IMAGES || step === GenerationStep.COMPLETE) && deck && (
           <div className="animate-[fadeIn_1s_ease-out] w-full max-w-6xl mx-auto">
             
